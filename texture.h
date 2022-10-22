@@ -1,11 +1,18 @@
 #pragma once
 
+#include <stb/stb_image.h>
+
 struct Image
 {
 	uint8* data; // pixel data
 	int width, height, depth;
 	int channels; // number of fields per pixel
 	uint type;
+	
+	void load(Image img)
+	{
+		*this = img;
+	}
 	
 	// create an empty 2D or 3D image
 	// optionally zeroes out buffer
@@ -28,7 +35,7 @@ struct Image
 	}
 	
 	// load 2D image from a file
-	void loadFile(char* filename)
+	void loadFile(const char* filename)
 	{
 		type = GL_TEXTURE_2D;
 		depth = 0;
@@ -43,9 +50,9 @@ struct Texture
 	
 	Image img;
 	
-	void loadImage(Image _image)
+	void loadImage(Image image)
 	{
-		img = _image;
+		img.load(image);
 	}
 	
 	void unloadImage()
@@ -81,3 +88,8 @@ struct Texture
 		}
 	}
 };
+
+void resetTexture()
+{
+	glActiveTexture(GL_TEXTURE0);
+}

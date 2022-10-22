@@ -1,14 +1,5 @@
 #pragma once
 
-struct vec2 {float x, y;};
-struct vec3 {float x, y, z;};
-struct vec4 {float x, y, z, w;};
-
-struct mat4 {float m0, m4, m8, m12,
-			      m1, m5, m9, m13,
-			      m2, m6, m10, m14,
-			      m3, m7, m11, m15;};
-
 void FileToString(char* file, char** string)
 {
 	FILE* f = fopen(file, "r");
@@ -22,29 +13,30 @@ void FileToString(char* file, char** string)
 
 struct Shader
 {
-	unsigned int id;
-	unsigned int vert;
-	unsigned int frag;
+	uint id;
+	uint vert;
+	uint frag;
 	
+	static Shader* activeShader;
 	static uint textureSlot;
 	
 	char name[32];
 	
 	void init()
 	{
-		name[0] = '0';
+		name[0] = 0;
 	}
 	
 	void setName(const char* _name)
 	{
 		int i = 0;
-		for (; *_name != '0'; _name++)
+		for (; *_name != 0; _name++)
 		{
 			if (i > 30) break;
 			name[i] = *_name;
 			i++;
 		}
-		name[i] = '0';
+		name[i] = 0;
 	}
 	
 	void load(char* vertCode, char* fragCode)
@@ -118,14 +110,8 @@ struct Shader
 	
 	void setMat4(char* uniform, mat4 value)
 	{
-		float matrixBuffer[16] =
-		{
-        value.m0, value.m1, value.m2, value.m3,
-        value.m4, value.m5, value.m6, value.m7,
-        value.m8, value.m9, value.m10, value.m11,
-        value.m12, value.m13, value.m14, value.m15
-    };
-    glUniformMatrix4fv(glGetUniformLocation(id, uniform), 1, false, matrixBuffer);
+		float* matrixBuffer = &value[0][0];
+		glUniformMatrix4fv(glGetUniformLocation(id, uniform), 1, false, matrixBuffer);
 	}
 	
 	void setTexture(char* uniform, Texture texture)
@@ -136,16 +122,22 @@ struct Shader
 		
 		textureSlot++;
 	}
-	
-	static void clear()
-	{
-		textureSlot = 0;
-	}
-	
-	void use()
-	{
-		glUseProgram(id);
-	}
 };
 
+Shader* Shader::activeShader = (Shader*)0;
 uint Shader::textureSlot = 0;
+
+inline
+Shader* activeShader() { return Shader::activeShader; }
+
+void clearShaders()
+{
+	Shader::textureSlot = 0;
+}
+
+void useShader(Shader* shader)
+{
+	Shader::activeShader = shader;
+	glUseProgram(shader->id);
+	clearShaders();
+}

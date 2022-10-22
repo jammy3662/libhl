@@ -21,6 +21,29 @@ This will overwrite any existing file at the path.\n"
 tcomp - texture precompilation utility\n\
 Processes various image formats into C header definitions.\n"
 
+#define BYTE_DATA_START "\
+#ifndef HL_COMPILE_RES\n\
+extern\n\
+#endif\n\
+unsigned char %sImg_BYTES[%lu]\n\
+#ifdef HL_COMPILE_RES\n\
+={\n"
+
+#define BYTE_DATA_END "\
+\n}\n\
+#endif\n\
+;\n"
+
+#define STRUCT "\
+#ifndef HL_COMPILE_RES\n\
+extern\n\
+#endif\n\
+Image %sImg\n\
+#ifdef HL_COMPILE_RES\n\
+= {%sImg_BYTES,%i,%i,0,%i,GL_TEXTURE_2D}\n\
+#endif\n\
+;\n"
+
 FILE* out;
 
 char* pathGetName(char* path, char delimeter)
@@ -99,7 +122,12 @@ void expandFile(char* path)
 		return;
 	}
 	
-	fprintf(out, "#ifndef HL_COMPILE_RES\nextern\n#endif\nstruct{unsigned char d[%lu];int w,h,b,c;unsigned int t;} %sImg\n#ifdef HL_COMPILE_RES\n= {\n{\n", width*height*channels, pathGetName(path, PATH_DELIM));
+	char* name = pathGetName(path, PATH_DELIM);
+	uint64 len = width * height * channels;
+	
+	//fprintf(out, "#ifndef HL_COMPILE_RES\nextern\n#endif\nstruct{unsigned char d[%lu];int w,h,b,c;unsigned int t;} %sImg\n#ifdef HL_COMPILE_RES\n= {\n{\n", len, name);
+	
+	fprintf(out, BYTE_DATA_START, name, len);
 
 	for (int y = 0; y < height; y++)
 	{
@@ -111,7 +139,11 @@ void expandFile(char* path)
 		}
 	}
 	
-	fprintf(out, "},\n%i,%i,%i,0}\n#endif\n;\n", width, height, channels);
+	fprintf(out, BYTE_DATA_END STRUCT, name, name, width, height, channels);
+	
+	//fprintf(out, "\n};\n#ifndef HL_COMPILE_RES\nextern\n#endif\nstruct{unsigned char d[%lu];int w,h,b,c;unsigned int t;} %sImg\n#ifdef HL_COMPILE_RES\n= {\n{\n"
+	
+	//fprintf(out, "},\n%i,%i,%i,0}\n#endif\n;\n", width, height, channels);
 	
 	return;
 }
@@ -135,6 +167,13 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	out = header;
+	
+	fprintf(out, "\
+	#include <glad/glad.h>\n\
+	#include <GLFW/glfw3.h>\n\
+	#ifdef HL_COMPILE_RES\n\
+	struct Image {unsigned char* data; int width, height, depth; int channels; unsigned int type;};\n\
+	#endif\n");
 	
 	for (int i = 2; i < argc; i++)
 	{

@@ -1,5 +1,7 @@
 #pragma once
 
+typedef struct {float r, g, b, a;} Color;
+
 struct
 {
 	GLFWwindow* window;
@@ -11,7 +13,7 @@ struct
 }
 hl;
 
-void setFramerate(uint8 framerate)
+void setFramerate(uint framerate)
 {
 	hl.frameTime = 1.0 / (float)framerate;
 }

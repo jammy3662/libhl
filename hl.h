@@ -2,30 +2,28 @@
 
 #include <stdio.h>
 
-#include <stb/stb_image.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+
+using namespace glm;
 
 #define uint unsigned int
 
-#define uint8 unsigned char
-#define uint16 unsigned short
-#define uint32 unsigned int
-#define uint64 unsigned long
+#define u8 unsigned char
+#define u16 unsigned short
+#define u32 unsigned int
+#define u64 unsigned long
 
-#define int8 char
-#define int16 short
-#define int32 int
-#define int64 long
+#define i8 char
+#define i16 short
+#define i32 int
+#define i64 long
 
-namespace HL
-{
+#include <ext.h>
+
 #include "core.h"
+#include "frame.h"
 #include "texture.h"
 #include "shader.h"
 #include "mesh.h"
-}

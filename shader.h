@@ -22,11 +22,6 @@ struct Shader
 	
 	char name[32];
 	
-	void init()
-	{
-		name[0] = 0;
-	}
-	
 	void setName(const char* _name)
 	{
 		int i = 0;
@@ -37,50 +32,6 @@ struct Shader
 			i++;
 		}
 		name[i] = 0;
-	}
-	
-	void load(char* vertCode, char* fragCode)
-	{
-		int compile = 0;
-		char err_str[1024];
-		
-		vert = glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(vert, 1, &vertCode, 0);
-		glCompileShader(vert);
-		glGetShaderiv(vert, GL_COMPILE_STATUS, &compile);
-		if (!compile)
-		{
-			glGetShaderInfoLog(vert, 1024, 0, err_str);
-			fprintf(stderr, "ERROR: [%s] vertex\n%s", name, err_str);
-		}
-		
-		frag = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderSource(frag, 1, &fragCode, NULL);
-		glCompileShader(frag);
-		glGetShaderiv(frag, GL_COMPILE_STATUS, &compile);
-		if (!compile)
-		{
-			glGetShaderInfoLog(frag, 1024, 0, err_str);
-			fprintf(stderr, "ERROR: [%s] fragment\n%s", name, err_str);
-		}
-		
-		id = glCreateProgram();
-		glAttachShader(id, vert);
-		glAttachShader(id, frag);
-		glLinkProgram(id);
-		
-		glDeleteShader(vert);
-		glDeleteShader(frag);
-	}
-	
-	void loadFile(char* vertPath, char* fragPath)
-	{
-		char* vertCode,
-		    * fragCode;
-		FileToString(vertPath, &vertCode);
-		FileToString(fragPath, &fragCode);
-		
-		load(vertCode, fragCode);
 	}
 	
 	void setInt(char* uniform, int value)
@@ -121,11 +72,62 @@ struct Shader
 		glUniform1i(glGetUniformLocation(id, uniform), textureSlot);
 		
 		textureSlot++;
+		glActiveTexture(0);
 	}
 };
 
 Shader* Shader::activeShader = (Shader*)0;
 uint Shader::textureSlot = 0;
+
+Shader createShader(char* vertCode, char* fragCode)
+{
+	Shader ret;
+	
+	ret.name[0] = 0; // null terminate for safety
+	
+	int compile = 0;
+	char err_str[1024];
+	
+	ret.vert = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(ret.vert, 1, &vertCode, 0);
+	glCompileShader(ret.vert);
+	glGetShaderiv(ret.vert, GL_COMPILE_STATUS, &compile);
+	if (!compile)
+	{
+		glGetShaderInfoLog(ret.vert, 1024, 0, err_str);
+		fprintf(stderr, "ERROR: [%s] vertex\n%s", ret.name, err_str);
+	}
+	
+	ret.frag = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(ret.frag, 1, &fragCode, NULL);
+	glCompileShader(ret.frag);
+	glGetShaderiv(ret.frag, GL_COMPILE_STATUS, &compile);
+	if (!compile)
+	{
+		glGetShaderInfoLog(ret.frag, 1024, 0, err_str);
+		fprintf(stderr, "ERROR: [%s] fragment\n%s", ret.name, err_str);
+	}
+	
+	ret.id = glCreateProgram();
+	glAttachShader(ret.id, ret.vert);
+	glAttachShader(ret.id, ret.frag);
+	glLinkProgram(ret.id);
+	
+	glDeleteShader(ret.vert);
+	glDeleteShader(ret.frag);
+	
+	return ret;
+}
+
+Shader createShaderFromFile(char* vertPath, char* fragPath)
+{
+	char* vertCode;
+	char* fragCode;
+	FileToString(vertPath, &vertCode);
+	FileToString(fragPath, &fragCode);
+	
+	return createShader(vertCode, fragCode);
+}
 
 inline
 Shader* activeShader() { return Shader::activeShader; }
@@ -137,7 +139,8 @@ void clearShaders()
 
 void useShader(Shader* shader)
 {
+	clearShaders();
 	Shader::activeShader = shader;
 	glUseProgram(shader->id);
-	clearShaders();
 }
+

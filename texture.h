@@ -8,40 +8,48 @@ struct Image
 	int width, height, depth;
 	int channels; // number of fields per pixel
 	uint type;
-	
-	void load(Image img)
-	{
-		*this = img;
-	}
-	
-	// create an empty 2D or 3D image
-	// optionally zeroes out buffer
-	void create(int _width, int _height, int _depth, int _channels, int zeroData = false)
-	{		
-		width = _width;
-		height = _height;
-		depth = _depth;
-		channels = _channels;
-		
-		if (depth < 1) type = GL_TEXTURE_2D;
-		else type = GL_TEXTURE_3D;
-		
-		uint64 pixelNum = width * height * depth;
-		uint64 dataSize = pixelNum * channels * sizeof(uint8);
-		
-		data = (uint8*) malloc(dataSize);
-		if (zeroData)
-			memset(data, 0, dataSize);
-	}
-	
-	// load 2D image from a file
-	void loadFile(const char* filename)
-	{
-		type = GL_TEXTURE_2D;
-		depth = 0;
-		data = stbi_load(filename, &width, &height, &channels, 0);
-	}
 };
+
+// load 2D image from a file
+Image createImage(const char* filename)
+{
+	Image ret;
+	
+	ret.type = GL_TEXTURE_2D;
+	ret.depth = 0;
+	ret.data = stbi_load(filename, &ret.width, &ret.height, &ret.channels, 0);
+	
+	return ret;
+}
+
+// create an empty 2D or 3D image
+// optionally zeroes out buffer
+Image createImage(int width, int height, int depth, int channels, int zeroData = false)
+{
+	Image ret;
+	
+	ret.width = width;
+	ret.height = height;
+	ret.depth = depth;
+	ret.channels = channels;
+	
+	if (depth < 1) ret.type = GL_TEXTURE_2D;
+	else ret.type = GL_TEXTURE_3D;
+	
+	u64 pixelNum = width * height * depth;
+	u64 dataSize = pixelNum * channels * sizeof(uint8);
+	
+	ret.data = (u8*) malloc(dataSize);
+	if (zeroData)
+		memset(ret.data, 0, dataSize);
+}
+
+void unloadImage(Image img)
+{
+	stbi_image_free(img.data);
+}
+
+// ================================
 
 struct Texture
 {
@@ -49,47 +57,45 @@ struct Texture
 	int format;
 	
 	Image img;
-	
-	void loadImage(Image image)
-	{
-		img.load(image);
-	}
-	
-	void unloadImage()
-	{
-		stbi_image_free(img.data);
-	}
-	
-	void load()
-	{
-		if (img.channels == 1) format = GL_R;
-		else if (img.channels == 3) format = GL_RGB;
-		else if (img.channels == 4) format = GL_RGBA;
-		else
-		{
-			fprintf(stderr, "[Texture] Unsupported channel count (%i)\n", img.channels);
-			return;
-		}
-		
-		glGenTextures(1, &id);
-		glBindTexture(img.type, id);
-		if (img.type == GL_TEXTURE_2D)
-		{
-			glTexImage2D(img.type, 0, format, img.width, img.height, 0, format, GL_UNSIGNED_BYTE, img.data);
-			glGenerateMipmap(img.type);
-		}
-		else if (img.type == GL_TEXTURE_3D)
-		{
-			glTexImage3D(img.type, 0, format, img.width, img.height, img.depth, 0, format, GL_UNSIGNED_BYTE, img.data);
-		}
-		else
-		{
-			fprintf(stderr, "[Texture] Image format unsupported for texture load (neither 2D nor 3D)\n");
-		}
-	}
 };
 
-void resetTexture()
+inline
+Texture createTexture(Image image)
+{
+	Texture ret;
+	ret.img = image;
+	return ret;
+}
+
+void uploadTexture(Texture& tex)
+{
+	if (tex.img.channels == 1) tex.format = GL_R;
+	else if (tex.img.channels == 3) tex.format = GL_RGB;
+	else if (tex.img.channels == 4) tex.format = GL_RGBA;
+	else
+	{
+		fprintf(stderr, "[Texture] Unsupported channel count (%i)\n", tex.img.channels);
+		return;
+	}
+	
+	glGenTextures(1, &tex.id);
+	glBindTexture(tex.img.type, tex.id);
+	if (tex.img.type == GL_TEXTURE_2D)
+	{
+		glTexImage2D(tex.img.type, 0, tex.format, tex.img.width, tex.img.height, 0, tex.format, GL_UNSIGNED_BYTE, tex.img.data);
+		glGenerateMipmap(tex.img.type);
+	}
+	else if (tex.img.type == GL_TEXTURE_3D)
+	{
+		glTexImage3D(tex.img.type, 0, tex.format, tex.img.width, tex.img.height, tex.img.depth, 0, tex.format, GL_UNSIGNED_BYTE, tex.img.data);
+	}
+	else
+	{
+		fprintf(stderr, "[Texture] Image tex.format unsupported for texture load (neither 2D nor 3D)\n");
+	}
+}
+
+void resetTextures()
 {
 	glActiveTexture(GL_TEXTURE0);
 }

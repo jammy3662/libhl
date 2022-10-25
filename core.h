@@ -4,14 +4,41 @@ typedef struct {float r, g, b, a;} Color;
 
 struct
 {
+	// glfw window handle
 	GLFWwindow* window;
+	
+	// frame time calculation
 	float lastFrameTime;
 	float thisFrameTime;
 	float delta;
+	
+	// frame throttle
 	float accumulator;
 	float frameTime;
+	
+	// frame (internal render target / backbuffer)
+	uint fwidth = 1920;
+	uint fheight = 1080;
+
+	// window (onscreen drawing)
+	uint wwidth = 1280;
+	uint wheight = 720;
 }
 hl;
+
+inline
+void setFrame(uint width, uint height)
+{
+	hl.fwidth = width;
+	hl.fheight = height;
+}
+
+inline
+void setWindow(uint width, uint height)
+{
+	hl.wwidth = width;
+	hl.wheight = height;
+}
 
 void setFramerate(uint framerate)
 {
@@ -27,8 +54,10 @@ void calculateDelta()
 	hl.lastFrameTime = hl.thisFrameTime;
 }
 
-uint frameStep()
+int shouldRender()
 {
+	calculateDelta();
+	
 	if (hl.accumulator >= hl.frameTime)
 	{
 		hl.accumulator = 0;
@@ -55,9 +84,9 @@ void deinit()
 	glfwTerminate();
 }
 
-uint openWindow(int width, int height, int viewportWidth, int viewportHeight, char* title)
+uint openWindow(char* title)
 {
-	hl.window = glfwCreateWindow(width, height, title, 0, 0);
+	hl.window = glfwCreateWindow(hl.wwidth, hl.wheight, title, 0, 0);
 	if (!hl.window)
 	{
 		fprintf(stderr, "Failed to create window\n");
@@ -72,7 +101,7 @@ uint openWindow(int width, int height, int viewportWidth, int viewportHeight, ch
 		return 1;
 	}
 	
-	glViewport(0,0, viewportWidth, viewportHeight);
+	glViewport(0,0, hl.fwidth, hl.fheight);
 	
 	return 0;
 }

@@ -23,7 +23,7 @@ using namespace glm;
 #include <ext.h>
 
 #include "core.h"
-#include "frame.h"
 #include "texture.h"
+#include "frame.h"
 #include "shader.h"
 #include "mesh.h"

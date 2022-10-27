@@ -38,7 +38,7 @@ unsigned char %sImg_BYTES[%lu]\n\
 #ifndef HL_COMPILE_RES\n\
 extern\n\
 #endif\n\
-Image %sImg\n\
+HL_RES_IMAGE %sImg\n\
 #ifdef HL_COMPILE_RES\n\
 = {%sImg_BYTES,%i,%i,0,%i,GL_TEXTURE_2D}\n\
 #endif\n\
@@ -171,9 +171,9 @@ int main(int argc, char** argv)
 	fprintf(out, "\
 	#include <glad/glad.h>\n\
 	#include <GLFW/glfw3.h>\n\
-	#ifdef HL_COMPILE_RES\n\
-	struct Image {unsigned char* data; int width, height, depth; int channels; unsigned int type;};\n\
-	#endif\n");
+	//#ifdef HL_COMPILE_RES\n\
+	struct HL_RES_IMAGE {unsigned char* data; int width, height, depth; int channels; unsigned int type;};\n\
+	//#endif\n");
 	
 	for (int i = 2; i < argc; i++)
 	{

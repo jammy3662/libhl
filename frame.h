@@ -1,11 +1,14 @@
 #pragma once
 
-struct Frame:
-public Texture
+struct Frame
 {
 	uint fbo;
-	uint color;
-	uint depth;
+	
+	int width;
+	int height;
+	
+	Texture color;
+	Texture depth;
 	
 	int ops;
 	
@@ -13,14 +16,18 @@ public Texture
 	uint magFilter;
 };
 
-void enableFrame(Frame frame)
+Frame* currentFrame = 0;
+
+void enableFrame(Frame* frame)
 {
-	glBindFramebuffer(frame.ops, frame.fbo);
+	currentFrame = frame;
+	glBindFramebuffer(frame->ops, frame->fbo);
 	glEnable(GL_DEPTH_TEST);
 }
 
 void defaultFrame()
 {
+	currentFrame = 0;
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glDisable(GL_DEPTH_TEST);
 }
@@ -29,8 +36,10 @@ void defaultFrame()
 Frame createFrame(int write, int read, int width, int height, int color = 1, int depth = 1, int stencil = 0, uint magFilter = GL_LINEAR, uint minFilter = GL_LINEAR)
 {
 	Frame ret;
-	ret.color = 0;
-	ret.depth = 0;
+	ret.width = width;
+	ret.height = height;
+	ret.color.type = GL_TEXTURE_2D;
+	ret.depth.type = GL_TEXTURE_2D;
 	
 	ret.minFilter = minFilter;
 	ret.magFilter = magFilter;
@@ -39,8 +48,9 @@ Frame createFrame(int write, int read, int width, int height, int color = 1, int
 	
 	if (color)
 	{
-		glGenTextures(1, &ret.color);
-		glBindTexture(GL_TEXTURE_2D, ret.color);
+		ret.color.format = GL_RGBA;
+		glGenTextures(1, &ret.color.id);
+		glBindTexture(GL_TEXTURE_2D, ret.color.id);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
@@ -48,16 +58,18 @@ Frame createFrame(int write, int read, int width, int height, int color = 1, int
 	
 	if (depth)
 	{
-		glGenTextures(1, &ret.depth);
-		glBindTexture(GL_TEXTURE_2D, ret.depth);
+		glGenTextures(1, &ret.depth.id);
+		glBindTexture(GL_TEXTURE_2D, ret.depth.id);
 		
 		if (stencil)
 		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_STENCIL, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_BYTE, 0);
+			ret.depth.format = GL_DEPTH_STENCIL;
+			glTexImage2D(GL_TEXTURE_2D, 0, ret.depth.format, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_BYTE, 0);
 		}
 		else
 		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+			ret.depth.format = GL_DEPTH_COMPONENT;
+			glTexImage2D(GL_TEXTURE_2D, 0, ret.depth.format, width, height, 0, ret.depth.format, GL_UNSIGNED_BYTE, 0);
 		}
 		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
@@ -71,17 +83,17 @@ Frame createFrame(int write, int read, int width, int height, int color = 1, int
 	glBindFramebuffer(ret.ops, ret.fbo);
 	if (color)
 	{
-		glFramebufferTexture2D(ret.ops, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ret.color, 0);
+		glFramebufferTexture2D(ret.ops, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ret.color.id, 0);
 	}
 	if (depth)
 	{
 		if (stencil)
 		{
-			glFramebufferTexture2D(ret.ops, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, ret.depth, 0);
+			glFramebufferTexture2D(ret.ops, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, ret.depth.id, 0);
 		}
 		else
 		{
-			glFramebufferTexture2D(ret.ops, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ret.depth, 0);
+			glFramebufferTexture2D(ret.ops, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ret.depth.id, 0);
 		}
 	}
 	

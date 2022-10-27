@@ -25,7 +25,7 @@ struct Vertex
 
 struct Mesh
 {	
-	uint vao, vbo, ebo;
+	uint vao, vbo;
 	
 	uint* indices;
 	uint numIndices;
@@ -38,7 +38,7 @@ struct Mesh
 	void draw(Array<Material> materials)
 	{		
 		char name[16];
-		Shader* shader = activeShader();
+		Shader* shader = activeShader;
 		
 		Material* material = &materials[materialId];
 		
@@ -49,7 +49,8 @@ struct Mesh
 		shader->setTexture("emissionTex", material->emission.texture);
 		
 		glBindVertexArray(vao);
-		glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, indices);
+		glBindVertexArray(0);
 	}
 };
 
@@ -59,7 +60,6 @@ Mesh createMesh()
 	
 	ret.vao = 0;
 	ret.vbo = 0;
-	ret.ebo = 0;
 	
 	ret.indices = 0;
 	ret.numIndices = 0;
@@ -162,15 +162,19 @@ void uploadMesh(Mesh& mesh)
 {
 	glGenVertexArrays(1, &mesh.vao);
 	glGenBuffers(1, &mesh.vbo);
-	glGenBuffers(1, &mesh.ebo);
 
 	glBindVertexArray(mesh.vao);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.numVertices, mesh.vertices, GL_STATIC_DRAW); 
-
+	//
+	// Quite possible we don't even need this
+	// but leaving it here just in case
+	/*
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * mesh.numIndices, mesh.indices, GL_STATIC_DRAW);
+	*/
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * mesh.numVertices, mesh.vertices, GL_STATIC_DRAW); 
 
 	// position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -273,7 +277,8 @@ Array<Material> getMaterials(const aiScene* scene)
 			// must match material struct
 			Texture* texture = (Texture*)
 				&( (Material::Component*)&ret[i].diffuse.texture )[type];
-			*texture = createTexture(createImage(path.C_Str()));
+			Image img = createImage(path.C_Str());
+			*texture = createTexture(&img);
 		}
 	}
 	

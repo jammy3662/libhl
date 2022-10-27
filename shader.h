@@ -17,9 +17,6 @@ struct Shader
 	uint vert;
 	uint frag;
 	
-	static Shader* activeShader;
-	static uint textureSlot;
-	
 	char name[32];
 	
 	void setName(const char* _name)
@@ -65,19 +62,17 @@ struct Shader
 		glUniformMatrix4fv(glGetUniformLocation(id, uniform), 1, false, matrixBuffer);
 	}
 	
-	void setTexture(char* uniform, Texture texture)
+	void setTexture(char* uniform, Texture& texture)
 	{
-		glActiveTexture(GL_TEXTURE0 + textureSlot);
-		glBindTexture((texture.img.depth) ? GL_TEXTURE_3D : GL_TEXTURE_2D, texture.id);
+		activateTexture(texture);
 		glUniform1i(glGetUniformLocation(id, uniform), textureSlot);
 		
 		textureSlot++;
-		glActiveTexture(0);
+		//glActiveTexture(0); // so we dont accidentally modify this texture with later operations
 	}
 };
 
-Shader* Shader::activeShader = (Shader*)0;
-uint Shader::textureSlot = 0;
+Shader* activeShader = 0;
 
 Shader createShader(char* vertCode, char* fragCode)
 {
@@ -129,18 +124,10 @@ Shader createShaderFromFile(char* vertPath, char* fragPath)
 	return createShader(vertCode, fragCode);
 }
 
-inline
-Shader* activeShader() { return Shader::activeShader; }
-
-void clearShaders()
-{
-	Shader::textureSlot = 0;
-}
-
 void useShader(Shader* shader)
 {
-	clearShaders();
-	Shader::activeShader = shader;
+	activeShader = shader;
 	glUseProgram(shader->id);
 }
 
+Shader hl_textureShader;

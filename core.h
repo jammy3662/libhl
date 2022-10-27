@@ -84,6 +84,8 @@ void deinit()
 	glfwTerminate();
 }
 
+void setup();
+
 uint openWindow(char* title)
 {
 	hl.window = glfwCreateWindow(hl.wwidth, hl.wheight, title, 0, 0);
